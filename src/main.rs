@@ -4,6 +4,8 @@ use std::path::PathBuf;
 mod directory;
 mod python_module;
 
+use python_module::find_python_modules;
+
 #[derive(Parser, Default, Debug)]
 #[clap(author = "Jan Krecke", version)]
 /// Find circular imports in a Python project
@@ -17,7 +19,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Arguments::parse();
     let input_path = args.input_path;
 
-    let modules = python_module::find_python_modules(input_path);
+    let modules = find_python_modules(input_path);
     println!("{:?}", modules);
 
     return Ok(());

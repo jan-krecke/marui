@@ -13,14 +13,7 @@ pub fn find_python_modules(local_path: PathBuf) -> Vec<PythonModule> {
     let mut modules: Vec<PythonModule> = Vec::new();
     for dir_entry in fs::read_dir(local_path).unwrap() {
         let sub_path = dir_entry.unwrap().path();
-        if sub_path.is_dir()
-            && !sub_path
-                .file_name()
-                .unwrap()
-                .to_str()
-                .unwrap()
-                .starts_with(".")
-        {
+        if sub_path.is_dir() && crate::directory::path_is_not_hidden(&sub_path) {
             if crate::directory::init_file_exists(&sub_path) {
                 let modules_to_add = find_python_modules(sub_path);
                 modules.extend(modules_to_add);

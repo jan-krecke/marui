@@ -18,8 +18,9 @@ struct Arguments {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Arguments::parse();
     let input_path = args.input_path;
+    let project_prefix = input_path.to_str().to_owned().unwrap();
 
-    let modules = find_python_modules(input_path);
+    let modules = find_python_modules(&input_path, project_prefix);
     println!("{:?}", modules);
 
     return Ok(());

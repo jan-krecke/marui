@@ -24,3 +24,8 @@ $ cargo install --path .
 
 # Feeback and contribution
 If you want to use this tool and find any problems, feel free to open a PR or an issue :-).
+
+# Todo
+- add unit tests
+- search submodules if present
+- ...

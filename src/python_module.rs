@@ -64,7 +64,7 @@ pub fn look_for_circular_imports(modules: Vec<PythonModule>) -> Vec<util::Unorde
             if let Some(desired_module) = modules.iter().find(|module| module.name == import) {
                 if desired_module.imports.contains(&module.name) {
                     let pair =
-                        util::UnorderedPair::Pair(module.name.clone(), desired_module.name.clone());
+                        util::UnorderedPair(module.name.clone(), desired_module.name.clone());
                     if !circular_import_pairs.contains(&pair) {
                         circular_import_pairs.push(pair);
                     }

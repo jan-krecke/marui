@@ -19,7 +19,11 @@ struct Arguments {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Arguments::parse();
     let input_path = args.input_path;
-    let project_prefix = input_path.to_str().to_owned().unwrap();
+    if !directory::pyproject_exists(&input_path) {
+        return Err(From::from("Target directory is not a Python project."));
+    }
+
+    let project_prefix = input_path.to_str().unwrap();
 
     let modules = find_python_modules(&input_path, project_prefix);
 

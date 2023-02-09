@@ -2,6 +2,8 @@ use std::fs;
 use std::io::BufRead;
 use std::path::{Path, PathBuf};
 
+use crate::util;
+
 #[derive(Debug)]
 pub struct PythonModule {
     pub name: String,
@@ -53,4 +55,22 @@ fn find_imports(file_path: &Path) -> Vec<String> {
         }
     }
     imports
+}
+
+pub fn look_for_circular_imports(modules: Vec<PythonModule>) -> Vec<util::UnordTuple> {
+    let mut circular_import_pairs = Vec::new();
+    for module in &modules {
+        for import in module.imports.clone() {
+            if let Some(desired_module) = modules.iter().find(|module| module.name == import) {
+                if desired_module.imports.contains(&module.name) {
+                    let pair =
+                        util::UnordTuple::Pair(module.name.clone(), desired_module.name.clone());
+                    if !circular_import_pairs.contains(&pair) {
+                        circular_import_pairs.push(pair);
+                    }
+                }
+            }
+        }
+    }
+    circular_import_pairs
 }

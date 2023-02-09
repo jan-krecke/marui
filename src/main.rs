@@ -3,8 +3,9 @@ use std::path::PathBuf;
 
 mod directory;
 mod python_module;
+mod util;
 
-use python_module::find_python_modules;
+use python_module::{find_python_modules, look_for_circular_imports};
 
 #[derive(Parser, Default, Debug)]
 #[clap(author = "Jan Krecke", version)]
@@ -21,7 +22,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let project_prefix = input_path.to_str().to_owned().unwrap();
 
     let modules = find_python_modules(&input_path, project_prefix);
-    println!("{:?}", modules);
+    //println!("{:?}", modules);
+    let circular_imports = look_for_circular_imports(modules);
+    println!("{:?}", circular_imports);
 
     return Ok(());
 }

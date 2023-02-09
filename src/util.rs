@@ -1,12 +1,12 @@
 #[derive(Debug)]
-pub enum UnordTuple {
-    Pair(String, String),
+pub enum UnorderedPair<T> {
+    Pair(T, T),
 }
 
-impl PartialEq for UnordTuple {
+impl<T: std::cmp::PartialEq> PartialEq for UnorderedPair<T> {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (UnordTuple::Pair(a1, b1), UnordTuple::Pair(a2, b2)) => {
+            (UnorderedPair::Pair(a1, b1), UnorderedPair::Pair(a2, b2)) => {
                 (a1 == a2 && b1 == b2) || (a1 == b2 && b1 == a2)
             }
         }

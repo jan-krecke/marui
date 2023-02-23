@@ -27,11 +27,11 @@ pub fn find_python_modules(local_path: &PathBuf, prefix_for_strip: &str) -> Vec<
 
             modules.push(PythonModule {
                 name: sub_path
-                    .strip_prefix(&prefix_for_strip)
+                    .strip_prefix(prefix_for_strip)
                     .unwrap()
                     .to_str()
                     .unwrap()
-                    .replace("/", ".")
+                    .replace('/', ".")
                     .replace(".py", ""),
                 imports,
             })

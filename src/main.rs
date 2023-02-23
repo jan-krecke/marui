@@ -29,7 +29,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let circular_imports = look_for_circular_imports(modules);
 
-    if circular_imports.len() > 0 {
+    if !circular_imports.is_empty() {
         println!("\u{274C} Circular imports were found: \n");
         for pair in circular_imports {
             println!("'{}' and '{}' import each other.", pair.0, pair.1);
@@ -38,5 +38,5 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("\u{2705} No circular imports were found.")
     }
 
-    return Ok(());
+    Ok(())
 }

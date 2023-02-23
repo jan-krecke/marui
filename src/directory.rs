@@ -39,5 +39,5 @@ pub fn is_python_file(path: &PathBuf) -> bool {
 }
 
 pub fn path_is_not_hidden(path: &PathBuf) -> bool {
-    !path.file_name().unwrap().to_str().unwrap().starts_with(".")
+    !path.file_name().unwrap().to_str().unwrap().starts_with('.')
 }

@@ -29,7 +29,7 @@ $ cargo install --path .
 Alternatively, just get `marui` directly from `crates.io`:
 
 ```
-$ cargo add marui
+$ cargo install marui
 ```
 
 # Feeback and contribution

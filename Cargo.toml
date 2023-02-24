@@ -2,6 +2,13 @@
 name = "marui"
 version = "0.1.0"
 edition = "2021"
+description = "Find circular imports in a Python project."
+repository = "https://github.com/jan-krecke/marui"
+readme = "README.md"
+authors = ["Jan Krecke <jan.krecke@pm.me>"]
+license = "MIT"
+keywords = ["python", "cli"]
+categories = ["development-tools", "command-line-utilities"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

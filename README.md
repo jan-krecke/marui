@@ -14,6 +14,10 @@ In a Python project (characterized by a `pyproject.toml` being present), simply 
 $ marui .
 ```
 
+# Limitations
+
+In the current version (0.1.0), `marui` can only find direct circular imports of Python modules. The plan for the next release is to extend this to finding circular import chains of any length using [directed graphs](https://en.wikipedia.org/wiki/Directed_graph) and  [strongly connected components](https://en.wikipedia.org/wiki/Strongly_connected_component).
+
 # Installation
 At the moment, the best (and only way) to install marui is to clone this repo and to install with `cargo`:
 ```shell
@@ -24,8 +28,3 @@ $ cargo install --path .
 
 # Feeback and contribution
 If you want to use this tool and find any problems, feel free to open a PR or an issue :-).
-
-# Todo
-- add unit tests
-- search submodules if present
-- ...

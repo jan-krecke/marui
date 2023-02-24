@@ -1,4 +1,5 @@
 # marui - Find circular imports in Python projects.
+[![Crate](https://img.shields.io/crates/v/marui.svg)](https://crates.io/crates/marui)
 
 At work I work with a relatively large Python code base. Sometimes I find myself accidentally adding circular dependencies between modules. This leads to the classical
 

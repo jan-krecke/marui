@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::fs;
 use std::io::BufRead;
 use std::path::{Path, PathBuf};
@@ -6,7 +7,7 @@ use crate::directory;
 use crate::util;
 
 /// Representation of a Python module
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PythonModule {
     /// Name of the module
     pub name: String,
@@ -24,15 +25,17 @@ impl PythonModule {
         }
     }
 
-    pub fn update_id(&self, new_id: usize) {
+    pub fn update_id(&mut self, new_id: usize) {
         self.self_id = new_id;
     }
 }
 
 /// Graph representation of import structure within Python project
 #[derive(Debug)]
-struct ImportGraph {
+pub struct ImportGraph {
+    /// List of modules within the Python project.
     pub modules: Vec<PythonModule>,
+    /// Index of current module.
     current_module: Option<usize>,
 }
 
@@ -44,19 +47,51 @@ impl ImportGraph {
         }
     }
 
+    /// Add new module to the graph
+    ///
+    /// # Arguments
+    /// * `name` - Name of the new module
+    /// * `imports` - Modules imported by the new module
     fn add_module(&mut self, name: String, imports: Vec<String>) {
         let mod_id = self.modules.len();
         let pmodule = PythonModule::new(name, imports, mod_id);
         self.modules.push(pmodule);
     }
 
+    /// Extend the graph structure with another one
+    ///
+    /// # Arguments
+    /// * `other` - another instance of `ImportGraph` which shall be added to the current one
     fn extend(&mut self, other: ImportGraph) {
         let n_current = self.modules.len();
 
-        for (i, new_module) in other.modules.iter().enumerate() {
+        for (i, module) in other.modules.iter().enumerate() {
+            let mut new_module = module.clone();
             new_module.update_id(n_current + i);
-            self.modules.push(*new_module);
+            self.modules.push(new_module);
         }
+    }
+
+    /// Perform Depth-First Search (DFS), starting from a given root node
+    fn dfs_recursion(&self, root_id: usize, visited_ids: &mut HashSet<usize>) -> Vec<usize> {
+        let mut dfs_stack = vec![root_id];
+
+        for import_name in &self.modules[root_id].imports {
+            if let Some(import_id) = self.get_module_id(&import_name) {
+                if !visited_ids.contains(&import_id) {
+                    visited_ids.insert(import_id);
+                    dfs_stack.extend(self.dfs_recursion(import_id, visited_ids));
+                }
+            }
+        }
+        dfs_stack
+    }
+
+    fn get_module_id(&self, target_module_name: &str) -> Option<usize> {
+        self.modules
+            .iter()
+            .map(|module| module.name.clone())
+            .position(|mod_name| mod_name == target_module_name)
     }
 }
 

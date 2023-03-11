@@ -5,7 +5,7 @@ mod directory;
 mod python_module;
 mod util;
 
-use python_module::{find_python_modules, look_for_circular_imports};
+use python_module::{build_import_tree, look_for_circular_imports};
 
 #[derive(Parser, Default, Debug)]
 #[clap(author = "Jan Krecke", version)]
@@ -25,8 +25,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let project_prefix = input_path.to_str().unwrap();
 
-    let modules = find_python_modules(&input_path, project_prefix);
+    let modules = build_import_tree(&input_path, project_prefix);
 
+    println!("{:?}", modules);
+
+    /*
     let circular_imports = look_for_circular_imports(modules);
 
     if !circular_imports.is_empty() {
@@ -37,6 +40,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     } else {
         println!("\u{2705} No circular imports were found.")
     }
+    */
 
     Ok(())
 }

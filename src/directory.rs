@@ -1,6 +1,13 @@
 use std::fs;
 use std::path::Path;
 
+/// Check if a directory contains a `__init__.py` file
+///
+/// This function is used to determine whether a given directory
+/// is a Python module or not.
+///
+/// # Arguments
+/// * `path` - Path to the directory in question
 pub fn init_file_exists(path: &Path) -> bool {
     for entry in fs::read_dir(path).unwrap() {
         let entry = entry.unwrap();
@@ -14,6 +21,13 @@ pub fn init_file_exists(path: &Path) -> bool {
     false
 }
 
+/// Check if a directory contains a `pyproject.toml` file
+///
+/// This function is useful to determine whether a given directory
+/// is a Python project or not
+///
+/// # Arguments
+/// * `path` - Path to the directory in question
 pub fn pyproject_exists(path: &Path) -> bool {
     for entry in fs::read_dir(path).unwrap() {
         let entry = entry.unwrap();
@@ -27,6 +41,13 @@ pub fn pyproject_exists(path: &Path) -> bool {
     false
 }
 
+/// Check if a given file is a Python file or not.
+///
+/// `__init__.py` is not considered a Python file, although this
+/// may be changed in the future.
+///
+/// # Arguments
+/// * `path` - Path to the file in question.
 pub fn is_python_file(path: &Path) -> bool {
     if !path.ends_with("__init__.py") {
         match path.extension() {
@@ -38,6 +59,11 @@ pub fn is_python_file(path: &Path) -> bool {
     }
 }
 
+/// Check if a given directory or file is not hidden
+///
+/// Hidden files will not be considered by marui.
+///
+/// * `path` - Path to the given file or directory.
 pub fn path_is_not_hidden(path: &Path) -> bool {
     !path.file_name().unwrap().to_str().unwrap().starts_with('.')
 }

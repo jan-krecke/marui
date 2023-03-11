@@ -4,12 +4,22 @@ use std::path::{Path, PathBuf};
 
 use crate::util;
 
+/// Representation of a Python module
 #[derive(Debug)]
 pub struct PythonModule {
+    /// Name of the module
     pub name: String,
+    /// List of imported modules by this module
     pub imports: Vec<String>,
 }
 
+/// Find all modules in a Python project
+///
+/// Calls itself recursively on any submodules in the project.
+///
+/// # Arguments
+/// * `local_path` - Path to Python project
+/// * `prefix_for_strip` - project prefix to strip from fully qualified project path
 pub fn find_python_modules(local_path: &PathBuf, prefix_for_strip: &str) -> Vec<PythonModule> {
     // let local_path_string = local_path.clone().to_str().unwrap().to_owned();
     let mut modules: Vec<PythonModule> = Vec::new();
@@ -41,8 +51,14 @@ pub fn find_python_modules(local_path: &PathBuf, prefix_for_strip: &str) -> Vec<
     modules
 }
 
+/// Find imports in a Python file
+///
+/// Each string in the returned vector corresponds to one
+/// import line.
+///
+/// # Arguments
+/// * `file_path` - Path to Python file
 fn find_imports(file_path: &Path) -> Vec<String> {
-    // Find import in a Python file
     let mut imports = Vec::new();
     if let Ok(file) = fs::File::open(file_path) {
         let reader = std::io::BufReader::new(file);
@@ -57,6 +73,10 @@ fn find_imports(file_path: &Path) -> Vec<String> {
     imports
 }
 
+/// Detect circular imports in a series of Python modules
+///
+/// # Arguments
+/// * `modules` - a list of Python modules extracted from a Python project
 pub fn look_for_circular_imports(modules: Vec<PythonModule>) -> Vec<util::UnorderedPair<String>> {
     let mut circular_import_pairs = Vec::new();
     for module in &modules {

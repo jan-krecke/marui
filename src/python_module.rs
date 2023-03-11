@@ -37,6 +37,8 @@ pub struct ImportGraph {
     pub modules: Vec<PythonModule>,
     /// Index of current module.
     current_module: Option<usize>,
+    /// List of import cycles
+    import_cycles: Vec<Vec<usize>>,
 }
 
 impl ImportGraph {
@@ -44,6 +46,7 @@ impl ImportGraph {
         Self {
             modules: Vec::new(),
             current_module: None,
+            import_cycles: Vec::new(),
         }
     }
 
@@ -73,18 +76,40 @@ impl ImportGraph {
     }
 
     /// Perform Depth-First Search (DFS), starting from a given root node
-    fn dfs_recursion(&self, root_id: usize, visited_ids: &mut HashSet<usize>) -> Vec<usize> {
-        let mut dfs_stack = vec![root_id];
+    fn dfs_recursion(
+        &self,
+        root_id: usize,
+        dfs_stack: &mut Vec<usize>,
+        visited_ids: &mut Vec<usize>,
+        import_cycles: &mut Vec<Vec<usize>>,
+    ) {
+        // At the start of each visit, we push the ID of the visited
+        // module to the DFS stack to mark which elements are part of
+        // the current import chain
+        dfs_stack.push(root_id);
 
         for import_name in &self.modules[root_id].imports {
+            // Check if imported module is part of the project graph and---if so--- returns its ID
             if let Some(import_id) = self.get_module_id(&import_name) {
+                // If the imported module has not been visited yet, it will be visited now.
                 if !visited_ids.contains(&import_id) {
-                    visited_ids.insert(import_id);
-                    dfs_stack.extend(self.dfs_recursion(import_id, visited_ids));
+                    visited_ids.push(import_id);
+                    self.dfs_recursion(import_id, dfs_stack, visited_ids, import_cycles);
+                } else {
+                    // Otherwise, i.e., if the imported module has been visited already,
+                    // we check if the visit has happened as part of the current DFS stack
+                    if let Some(dfs_stack_id) = dfs_stack.iter().position(|v_id| *v_id == import_id)
+                    {
+                        // If that is the case, a circular import must have happened, and we push the
+                        // import chain to the list holding all such chains
+                        import_cycles.push(dfs_stack[dfs_stack_id..].to_owned());
+                    }
                 }
             }
         }
-        dfs_stack
+        // At the end of each visit, we pop the ID of the stack to indicate
+        // that this module is not part of currently investigated import chain
+        dfs_stack.pop();
     }
 
     fn get_module_id(&self, target_module_name: &str) -> Option<usize> {

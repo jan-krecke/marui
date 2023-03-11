@@ -23,6 +23,10 @@ impl PythonModule {
             self_id,
         }
     }
+
+    pub fn update_id(&self, new_id: usize) {
+        self.self_id = new_id;
+    }
 }
 
 /// Graph representation of import structure within Python project
@@ -44,6 +48,15 @@ impl ImportGraph {
         let mod_id = self.modules.len();
         let pmodule = PythonModule::new(name, imports, mod_id);
         self.modules.push(pmodule);
+    }
+
+    pub fn extend(&mut self, other: ImportGraph) {
+        let n_current = self.modules.len();
+
+        for (i, new_module) in other.modules.iter().enumerate() {
+            new_module.update_id(n_current + i);
+            self.modules.push(*new_module);
+        }
     }
 }
 

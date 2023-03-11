@@ -35,14 +35,8 @@ pub fn find_python_modules(local_path: &PathBuf, prefix_for_strip: &str) -> Vec<
         } else if sub_path.is_file() && crate::directory::is_python_file(&sub_path) {
             let imports = find_imports(&sub_path);
 
-            modules.push(PythonModule {
-                name: sub_path
-                    .strip_prefix(prefix_for_strip)
-                    .unwrap()
-                    .to_str()
-                    .unwrap()
-                    .replace('/', ".")
-                    .replace(".py", ""),
+            modules.push(PythonModule::new(
+                directory::convert_path_to_module_id(&sub_path, prefix_for_strip),
                 imports,
             })
         }

@@ -31,7 +31,7 @@ impl PythonModule {
 
 /// Graph representation of import structure within Python project
 #[derive(Debug)]
-pub struct ImportGraph {
+struct ImportGraph {
     pub modules: Vec<PythonModule>,
     current_module: Option<usize>,
 }
@@ -44,13 +44,13 @@ impl ImportGraph {
         }
     }
 
-    pub fn add_module(&mut self, name: String, imports: Vec<String>) {
+    fn add_module(&mut self, name: String, imports: Vec<String>) {
         let mod_id = self.modules.len();
         let pmodule = PythonModule::new(name, imports, mod_id);
         self.modules.push(pmodule);
     }
 
-    pub fn extend(&mut self, other: ImportGraph) {
+    fn extend(&mut self, other: ImportGraph) {
         let n_current = self.modules.len();
 
         for (i, new_module) in other.modules.iter().enumerate() {
@@ -67,7 +67,7 @@ impl ImportGraph {
 /// # Arguments
 /// * `local_path` - Path to Python project
 /// * `prefix_for_strip` - project prefix to strip from fully qualified project path
-pub fn find_python_modules(local_path: &PathBuf, prefix_for_strip: &str) -> ImportGraph {
+pub fn build_import_tree(local_path: &PathBuf, prefix_for_strip: &str) -> ImportGraph {
     // let local_path_string = local_path.clone().to_str().unwrap().to_owned();
     let mut import_graph = ImportGraph::new();
 
@@ -77,7 +77,7 @@ pub fn find_python_modules(local_path: &PathBuf, prefix_for_strip: &str) -> Impo
         if sub_path.is_dir() && crate::directory::path_is_not_hidden(&sub_path) {
             // check if directory is a Python module
             if crate::directory::init_file_exists(&sub_path) {
-                import_graph.extend(find_python_modules(&sub_path, prefix_for_strip));
+                import_graph.extend(build_import_tree(&sub_path, prefix_for_strip));
             }
         } else if sub_path.is_file() && crate::directory::is_python_file(&sub_path) {
             let imports = find_imports(&sub_path);

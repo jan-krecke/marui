@@ -2,6 +2,7 @@ use std::fs;
 use std::io::BufRead;
 use std::path::{Path, PathBuf};
 
+use crate::directory;
 use crate::util;
 
 /// Representation of a Python module
@@ -11,6 +12,39 @@ pub struct PythonModule {
     pub name: String,
     /// List of imported modules by this module
     pub imports: Vec<String>,
+    /// ID of node within `ImportGraph`
+    self_id: usize,
+}
+impl PythonModule {
+    fn new(name: String, imports: Vec<String>, self_id: usize) -> Self {
+        Self {
+            name,
+            imports,
+            self_id,
+        }
+    }
+}
+
+/// Graph representation of import structure within Python project
+#[derive(Debug)]
+pub struct ImportGraph {
+    pub modules: Vec<PythonModule>,
+    current_module: Option<usize>,
+}
+
+impl ImportGraph {
+    fn new() -> Self {
+        Self {
+            modules: Vec::new(),
+            current_module: None,
+        }
+    }
+
+    pub fn add_module(&mut self, name: String, imports: Vec<String>) {
+        let mod_id = self.modules.len();
+        let pmodule = PythonModule::new(name, imports, mod_id);
+        self.modules.push(pmodule);
+    }
 }
 
 /// Find all modules in a Python project
@@ -20,9 +54,9 @@ pub struct PythonModule {
 /// # Arguments
 /// * `local_path` - Path to Python project
 /// * `prefix_for_strip` - project prefix to strip from fully qualified project path
-pub fn find_python_modules(local_path: &PathBuf, prefix_for_strip: &str) -> Vec<PythonModule> {
+pub fn find_python_modules(local_path: &PathBuf, prefix_for_strip: &str) -> ImportGraph {
     // let local_path_string = local_path.clone().to_str().unwrap().to_owned();
-    let mut modules: Vec<PythonModule> = Vec::new();
+    let mut import_graph = ImportGraph::new();
 
     for dir_entry in fs::read_dir(local_path).unwrap() {
         let sub_path = dir_entry.unwrap().path();
@@ -30,19 +64,19 @@ pub fn find_python_modules(local_path: &PathBuf, prefix_for_strip: &str) -> Vec<
         if sub_path.is_dir() && crate::directory::path_is_not_hidden(&sub_path) {
             // check if directory is a Python module
             if crate::directory::init_file_exists(&sub_path) {
-                modules.extend(find_python_modules(&sub_path, prefix_for_strip));
+                import_graph.extend(find_python_modules(&sub_path, prefix_for_strip));
             }
         } else if sub_path.is_file() && crate::directory::is_python_file(&sub_path) {
             let imports = find_imports(&sub_path);
 
-            modules.push(PythonModule::new(
+            import_graph.add_module(
                 directory::convert_path_to_module_id(&sub_path, prefix_for_strip),
                 imports,
-            })
+            )
         }
     }
 
-    modules
+    import_graph
 }
 
 /// Find imports in a Python file

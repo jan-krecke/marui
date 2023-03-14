@@ -196,3 +196,15 @@ fn find_imports_in_py(file_path: &Path) -> Vec<String> {
     }
     imports
 }
+
+pub fn print_import_cycles(import_cycles: Vec<Vec<String>>) {
+    if import_cycles.is_empty() {
+        println!("\u{2705} No circular imports were found.")
+    } else {
+        println!("\u{274C} Circular imports were found: \n");
+        for cycle in import_cycles {
+            let line = cycle.join(" -> ");
+            println!("{line}");
+        }
+    }
+}

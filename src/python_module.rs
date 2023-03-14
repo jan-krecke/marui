@@ -3,7 +3,6 @@ use std::io::BufRead;
 use std::path::{Path, PathBuf};
 
 use crate::directory;
-use crate::util;
 
 /// Representation of a Python module
 #[derive(Debug, Clone)]
@@ -67,8 +66,10 @@ impl ImportGraph {
 
         for (i, module) in other.modules.iter().enumerate() {
             let mut new_module = module.clone();
-            new_module.update_id(n_current + i);
+            let new_mod_id = n_current + i;
+            new_module.update_id(new_mod_id);
             self.modules.push(new_module);
+            self.mod_ids.push(new_mod_id);
         }
     }
 
@@ -78,7 +79,7 @@ impl ImportGraph {
         root_id: usize,
         dfs_stack: &mut Vec<usize>,
         visited_ids: &mut Vec<usize>,
-        import_cycles: &mut Vec<Vec<usize>>,
+        import_cycles: &mut Vec<Vec<String>>,
     ) {
         // At the start of each visit, we push the ID of the visited
         // module to the DFS stack to mark which elements are part of
@@ -87,7 +88,7 @@ impl ImportGraph {
 
         for import_name in &self.modules[root_id].imports {
             // Check if imported module is part of the project graph and---if so--- returns its ID
-            if let Some(import_id) = self.get_module_id(import_name) {
+            if let Some(import_id) = self.get_module_id_from_name(import_name) {
                 // If the imported module has not been visited yet, it will be visited now.
                 if !visited_ids.contains(&import_id) {
                     visited_ids.push(import_id);
@@ -99,7 +100,12 @@ impl ImportGraph {
                     {
                         // If that is the case, a circular import must have happened, and we push the
                         // import chain to the list holding all such chains
-                        import_cycles.push(dfs_stack[dfs_stack_id..].to_owned());
+                        let mut import_cycle = Vec::new();
+                        for mod_id in dfs_stack[dfs_stack_id..].iter() {
+                            import_cycle.push(self.modules[*mod_id].name.clone());
+                        }
+                        import_cycle.push(self.modules[dfs_stack[dfs_stack_id]].name.clone());
+                        import_cycles.push(import_cycle);
                     }
                 }
             }
@@ -109,7 +115,7 @@ impl ImportGraph {
         dfs_stack.pop();
     }
 
-    fn find_circular_imports(&self) -> Vec<Vec<usize>> {
+    pub fn find_circular_imports(&self) -> Vec<Vec<String>> {
         let mut dfs_stack = Vec::new();
         let mut visited_ids = Vec::new();
         let mut import_cycles = Vec::new();
@@ -128,7 +134,7 @@ impl ImportGraph {
         import_cycles
     }
 
-    fn get_module_id(&self, target_module_name: &str) -> Option<usize> {
+    fn get_module_id_from_name(&self, target_module_name: &str) -> Option<usize> {
         self.modules
             .iter()
             .map(|module| module.name.clone())
@@ -188,26 +194,4 @@ fn find_imports(file_path: &Path) -> Vec<String> {
         }
     }
     imports
-}
-
-/// Detect circular imports in a series of Python modules
-///
-/// # Arguments
-/// * `modules` - a list of Python modules extracted from a Python project
-pub fn look_for_circular_imports(modules: Vec<PythonModule>) -> Vec<util::UnorderedPair<String>> {
-    let mut circular_import_pairs = Vec::new();
-    for module in &modules {
-        for import in module.imports.clone() {
-            if let Some(desired_module) = modules.iter().find(|module| module.name == import) {
-                if desired_module.imports.contains(&module.name) {
-                    let pair =
-                        util::UnorderedPair(module.name.clone(), desired_module.name.clone());
-                    if !circular_import_pairs.contains(&pair) {
-                        circular_import_pairs.push(pair);
-                    }
-                }
-            }
-        }
-    }
-    circular_import_pairs
 }

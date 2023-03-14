@@ -1,4 +1,3 @@
-use std::collections::HashSet;
 use std::fs;
 use std::io::BufRead;
 use std::path::{Path, PathBuf};
@@ -88,7 +87,7 @@ impl ImportGraph {
 
         for import_name in &self.modules[root_id].imports {
             // Check if imported module is part of the project graph and---if so--- returns its ID
-            if let Some(import_id) = self.get_module_id(&import_name) {
+            if let Some(import_id) = self.get_module_id(import_name) {
                 // If the imported module has not been visited yet, it will be visited now.
                 if !visited_ids.contains(&import_id) {
                     visited_ids.push(import_id);
@@ -112,11 +111,11 @@ impl ImportGraph {
 
     fn find_circular_imports(&self) -> Vec<Vec<usize>> {
         let mut dfs_stack = Vec::new();
-        let mut visited_ids: Vec<usize> = Vec::new();
+        let mut visited_ids = Vec::new();
         let mut import_cycles = Vec::new();
 
         for mod_id in &self.mod_ids {
-            if !visited_ids.contains(&mod_id) {
+            if !visited_ids.contains(mod_id) {
                 self.dfs_recursion(
                     *mod_id,
                     &mut dfs_stack,

@@ -5,7 +5,7 @@ mod directory;
 mod python_module;
 mod util;
 
-use python_module::{build_import_tree, look_for_circular_imports};
+use python_module::{build_import_tree};
 
 #[derive(Parser, Default, Debug)]
 #[clap(author = "Jan Krecke", version)]
@@ -27,7 +27,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let modules = build_import_tree(&input_path, project_prefix);
 
-    println!("{:?}", modules);
+    println!("{modules:?}");
 
     /*
     let circular_imports = look_for_circular_imports(modules);

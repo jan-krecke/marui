@@ -1,6 +1,6 @@
 [package]
 name = "marui"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2021"
 description = "Find circular imports in a Python project."
 repository = "https://github.com/jan-krecke/marui"

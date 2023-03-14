@@ -115,6 +115,7 @@ impl ImportGraph {
         dfs_stack.pop();
     }
 
+    /// Find circular imports by applying DFS to the module import tree
     pub fn find_circular_imports(&self) -> Vec<Vec<String>> {
         let mut dfs_stack = Vec::new();
         let mut visited_ids = Vec::new();
@@ -162,7 +163,7 @@ pub fn build_import_tree(local_path: &PathBuf, prefix_for_strip: &str) -> Import
                 import_graph.extend(build_import_tree(&sub_path, prefix_for_strip));
             }
         } else if sub_path.is_file() && crate::directory::is_python_file(&sub_path) {
-            let imports = find_imports(&sub_path);
+            let imports = find_imports_in_py(&sub_path);
 
             import_graph.add_module(
                 directory::convert_path_to_module_id(&sub_path, prefix_for_strip),
@@ -181,7 +182,7 @@ pub fn build_import_tree(local_path: &PathBuf, prefix_for_strip: &str) -> Import
 ///
 /// # Arguments
 /// * `file_path` - Path to Python file
-fn find_imports(file_path: &Path) -> Vec<String> {
+fn find_imports_in_py(file_path: &Path) -> Vec<String> {
     let mut imports = Vec::new();
     if let Ok(file) = fs::File::open(file_path) {
         let reader = std::io::BufReader::new(file);

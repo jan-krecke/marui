@@ -35,18 +35,14 @@ impl PythonModule {
 pub struct ImportGraph {
     /// List of modules within the Python project.
     pub modules: Vec<PythonModule>,
-    /// Index of current module.
-    current_module: Option<usize>,
-    /// List of import cycles
-    import_cycles: Vec<Vec<usize>>,
+    pub mod_ids: Vec<usize>,
 }
 
 impl ImportGraph {
     fn new() -> Self {
         Self {
             modules: Vec::new(),
-            current_module: None,
-            import_cycles: Vec::new(),
+            mod_ids: Vec::new(),
         }
     }
 
@@ -58,7 +54,9 @@ impl ImportGraph {
     fn add_module(&mut self, name: String, imports: Vec<String>) {
         let mod_id = self.modules.len();
         let pmodule = PythonModule::new(name, imports, mod_id);
+
         self.modules.push(pmodule);
+        self.mod_ids.push(mod_id);
     }
 
     /// Extend the graph structure with another one
@@ -110,6 +108,25 @@ impl ImportGraph {
         // At the end of each visit, we pop the ID of the stack to indicate
         // that this module is not part of currently investigated import chain
         dfs_stack.pop();
+    }
+
+    fn find_circular_imports(&self) -> Vec<Vec<usize>> {
+        let mut dfs_stack = Vec::new();
+        let mut visited_ids: Vec<usize> = Vec::new();
+        let mut import_cycles = Vec::new();
+
+        for mod_id in &self.mod_ids {
+            if !visited_ids.contains(&mod_id) {
+                self.dfs_recursion(
+                    *mod_id,
+                    &mut dfs_stack,
+                    &mut visited_ids,
+                    &mut import_cycles,
+                );
+            }
+        }
+
+        import_cycles
     }
 
     fn get_module_id(&self, target_module_name: &str) -> Option<usize> {

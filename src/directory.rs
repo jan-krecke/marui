@@ -67,3 +67,18 @@ pub fn is_python_file(path: &Path) -> bool {
 pub fn path_is_not_hidden(path: &Path) -> bool {
     !path.file_name().unwrap().to_str().unwrap().starts_with('.')
 }
+
+/// Convert qualified Python module path to module identifier
+///
+/// # Arguments
+/// * `module_path` - Path to Python module (i.e., a `*.py` file)
+/// * `prefix` - project prefix to strip from module path
+pub fn convert_path_to_module_id(module_path: &Path, prefix: &str) -> String {
+    module_path
+        .strip_prefix(prefix)
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .replace('/', ".")
+        .replace(".py", "")
+}

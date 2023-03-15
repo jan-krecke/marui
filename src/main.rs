@@ -5,7 +5,7 @@ mod directory;
 mod python_module;
 mod util;
 
-use python_module::{find_python_modules, look_for_circular_imports};
+use python_module::{build_import_tree, print_import_cycles};
 
 #[derive(Parser, Default, Debug)]
 #[clap(author = "Jan Krecke", version)]
@@ -25,18 +25,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let project_prefix = input_path.to_str().unwrap();
 
-    let modules = find_python_modules(&input_path, project_prefix);
+    let module_graph = build_import_tree(&input_path, project_prefix);
 
-    let circular_imports = look_for_circular_imports(modules);
+    let circular_imports = module_graph.find_circular_imports();
 
-    if !circular_imports.is_empty() {
-        println!("\u{274C} Circular imports were found: \n");
-        for pair in circular_imports {
-            println!("'{}' and '{}' import each other.", pair.0, pair.1);
-        }
-    } else {
-        println!("\u{2705} No circular imports were found.")
-    }
+    print_import_cycles(circular_imports);
 
     Ok(())
 }

@@ -33,14 +33,12 @@ impl PythonModule {
 pub struct ImportGraph {
     /// List of modules within the Python project.
     pub modules: Vec<PythonModule>,
-    pub mod_ids: Vec<usize>,
 }
 
 impl ImportGraph {
     fn new() -> Self {
         Self {
             modules: Vec::new(),
-            mod_ids: Vec::new(),
         }
     }
 
@@ -54,7 +52,6 @@ impl ImportGraph {
         let pmodule = PythonModule::new(name, imports, mod_id);
 
         self.modules.push(pmodule);
-        self.mod_ids.push(mod_id);
     }
 
     /// Extend the graph structure with another one
@@ -69,7 +66,6 @@ impl ImportGraph {
             let new_mod_id = n_current + i;
             new_module.update_id(new_mod_id);
             self.modules.push(new_module);
-            self.mod_ids.push(new_mod_id);
         }
     }
 
@@ -121,14 +117,9 @@ impl ImportGraph {
         let mut visited_ids = Vec::new();
         let mut import_cycles = Vec::new();
 
-        for mod_id in &self.mod_ids {
-            if !visited_ids.contains(mod_id) {
-                self.dfs_recursion(
-                    *mod_id,
-                    &mut dfs_stack,
-                    &mut visited_ids,
-                    &mut import_cycles,
-                );
+        for mod_id in 0..self.modules.len() {
+            if !visited_ids.contains(&mod_id) {
+                self.dfs_recursion(mod_id, &mut dfs_stack, &mut visited_ids, &mut import_cycles);
             }
         }
 

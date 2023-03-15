@@ -27,6 +27,21 @@ impl PythonModule {
         self.self_id = new_id;
     }
 }
+impl PartialEq for PythonModule {
+    fn eq(&self, other: &Self) -> bool {
+        if self.name != other.name {
+            return false;
+        } else {
+            for import in &self.imports {
+                if !other.imports.contains(&import) {
+                    return false;
+                }
+            }
+        }
+
+        true
+    }
+}
 
 /// Graph representation of import structure within Python project
 #[derive(Debug)]
@@ -131,6 +146,22 @@ impl ImportGraph {
             .iter()
             .map(|module| module.name.clone())
             .position(|mod_name| mod_name == target_module_name)
+    }
+}
+
+impl PartialEq for ImportGraph {
+    fn eq(&self, other: &ImportGraph) -> bool {
+        if self.modules.len() != other.modules.len() {
+            return false;
+        }
+
+        for module in self.modules.iter() {
+            if !other.modules.contains(module) {
+                return false;
+            }
+        }
+
+        true
     }
 }
 

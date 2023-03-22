@@ -17,7 +17,28 @@ $ marui .
 
 # Limitations
 
-In the current version (0.1.0), `marui` can only find direct circular imports of Python modules. The plan for the next release is to extend this to finding circular import chains of any length using [directed graphs](https://en.wikipedia.org/wiki/Directed_graph) and  [strongly connected components](https://en.wikipedia.org/wiki/Strongly_connected_component).
+In its current version (`0.2.0`), `marui` can only find imports from within project that are imported with their fully qualified path. For example, if you have a project structure like this:
+```
+.
+├── pyproject.toml
+├── my_package 
+│   ├── a
+│   │   ├── __init__.py
+│   │   └── b.py
+│   └── c
+│       ├── __init__.py
+│       └── d.py
+└── ...
+```
+`b.py` can import `d.py` as
+```python
+import my_package.c.d 
+```
+but as not as
+```python
+import c.d
+```
+This will be addressed in the next version.
 
 # Installation
 If you have cloned this repository, build and install marui with `cargo`:

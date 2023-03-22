@@ -90,7 +90,7 @@ impl ImportGraph {
         root_id: usize,
         dfs_stack: &mut Vec<usize>,
         visited_ids: &mut Vec<usize>,
-        import_cycles: &mut Vec<Vec<String>>,
+        import_cycles: &mut Vec<ImportCycle>,
     ) {
         // At the start of each visit, we push the ID of the visited
         // module to the DFS stack to mark which elements are part of
@@ -111,11 +111,11 @@ impl ImportGraph {
                     {
                         // If that is the case, a circular import must have happened, and we push the
                         // import chain to the list holding all such chains
-                        let mut import_cycle = Vec::new();
+                        let mut import_cycle = ImportCycle::new();
                         for mod_id in dfs_stack[dfs_stack_id..].iter() {
-                            import_cycle.push(self.modules[*mod_id].name.clone());
+                            import_cycle.add_module(self.modules[*mod_id].name.clone());
                         }
-                        import_cycle.push(self.modules[dfs_stack[dfs_stack_id]].name.clone());
+                        import_cycle.add_module(self.modules[dfs_stack[dfs_stack_id]].name.clone());
                         import_cycles.push(import_cycle);
                     }
                 }
@@ -127,7 +127,7 @@ impl ImportGraph {
     }
 
     /// Find circular imports by applying DFS to the module import tree
-    pub fn find_circular_imports(&self) -> Vec<Vec<String>> {
+    pub fn find_circular_imports(&self) -> Vec<ImportCycle> {
         let mut dfs_stack = Vec::new();
         let mut visited_ids = Vec::new();
         let mut import_cycles = Vec::new();
@@ -157,6 +157,38 @@ impl PartialEq for ImportGraph {
 
         for module in self.modules.iter() {
             if !other.modules.contains(module) {
+                return false;
+            }
+        }
+
+        true
+    }
+}
+
+#[derive(Debug)]
+pub struct ImportCycle {
+    pub modules: Vec<String>,
+}
+impl ImportCycle {
+    fn new() -> Self {
+        Self {
+            modules: Vec::new(),
+        }
+    }
+
+    fn add_module(&mut self, module: String) {
+        self.modules.push(module);
+    }
+}
+
+impl PartialEq for ImportCycle {
+    fn eq(&self, other: &ImportCycle) -> bool {
+        if self.modules.len() != other.modules.len() {
+            return false;
+        }
+
+        for cycle in &self.modules {
+            if !other.modules.contains(&cycle) {
                 return false;
             }
         }
@@ -218,13 +250,13 @@ fn find_imports_in_py(file_path: &Path) -> Vec<String> {
     imports
 }
 
-pub fn print_import_cycles(import_cycles: Vec<Vec<String>>) {
+pub fn print_import_cycles(import_cycles: Vec<ImportCycle>) {
     if import_cycles.is_empty() {
         println!("\u{2705} No circular imports were found.")
     } else {
         println!("\u{274C} Circular imports were found: \n");
         for cycle in import_cycles {
-            let line = cycle.join(" -> ");
+            let line = cycle.modules.join(" -> ");
             println!("{line}");
         }
     }
@@ -278,15 +310,19 @@ mod tests {
 
     #[test]
     fn test_find_circular_imports() {
-        let local_path = PathBuf::from("tests/test_files");
-        let import_graph = build_import_tree(&local_path, "tests/test_files");
+        let local_path = PathBuf::from("test_files");
+        let import_graph = build_import_tree(&local_path, "test_files");
         let import_cycles = import_graph.find_circular_imports();
-        let expected_import_cycles = vec![vec![
-            "test_imports".to_owned(),
-            "test_imports.submodule".to_owned(),
-            "test_imports.submodule.subsubmodule".to_owned(),
-            "test_imports.submodule".to_owned(),
-        ]];
+        let test_cycle = ImportCycle {
+            modules: vec![
+                "package.module".to_owned(),
+                "package.submodule.test1".to_owned(),
+                "package.submodule.subsubmodule.test2".to_owned(),
+                "package.module".to_owned(),
+            ],
+        };
+        let expected_import_cycles = vec![test_cycle];
+
         assert_eq!(import_cycles, expected_import_cycles);
     }
 }

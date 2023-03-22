@@ -272,7 +272,14 @@ mod tests {
         let imports = find_imports_in_py(&file_path);
         assert_eq!(
             imports,
-            vec!["os", "sys", "numpy", "pandas", "matplotlib.pyplot"]
+            vec![
+                "os",
+                "sys",
+                "numpy",
+                "pandas",
+                "matplotlib.pyplot",
+                "package.submodule.test1"
+            ]
         );
     }
 

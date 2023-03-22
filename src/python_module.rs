@@ -27,6 +27,21 @@ impl PythonModule {
         self.self_id = new_id;
     }
 }
+impl PartialEq for PythonModule {
+    fn eq(&self, other: &Self) -> bool {
+        if self.name != other.name {
+            return false;
+        } else {
+            for import in &self.imports {
+                if !other.imports.contains(&import) {
+                    return false;
+                }
+            }
+        }
+
+        true
+    }
+}
 
 /// Graph representation of import structure within Python project
 #[derive(Debug)]
@@ -75,7 +90,7 @@ impl ImportGraph {
         root_id: usize,
         dfs_stack: &mut Vec<usize>,
         visited_ids: &mut Vec<usize>,
-        import_cycles: &mut Vec<Vec<String>>,
+        import_cycles: &mut Vec<ImportCycle>,
     ) {
         // At the start of each visit, we push the ID of the visited
         // module to the DFS stack to mark which elements are part of
@@ -96,11 +111,11 @@ impl ImportGraph {
                     {
                         // If that is the case, a circular import must have happened, and we push the
                         // import chain to the list holding all such chains
-                        let mut import_cycle = Vec::new();
+                        let mut import_cycle = ImportCycle::new();
                         for mod_id in dfs_stack[dfs_stack_id..].iter() {
-                            import_cycle.push(self.modules[*mod_id].name.clone());
+                            import_cycle.add_module(self.modules[*mod_id].name.clone());
                         }
-                        import_cycle.push(self.modules[dfs_stack[dfs_stack_id]].name.clone());
+                        import_cycle.add_module(self.modules[dfs_stack[dfs_stack_id]].name.clone());
                         import_cycles.push(import_cycle);
                     }
                 }
@@ -112,7 +127,7 @@ impl ImportGraph {
     }
 
     /// Find circular imports by applying DFS to the module import tree
-    pub fn find_circular_imports(&self) -> Vec<Vec<String>> {
+    pub fn find_circular_imports(&self) -> Vec<ImportCycle> {
         let mut dfs_stack = Vec::new();
         let mut visited_ids = Vec::new();
         let mut import_cycles = Vec::new();
@@ -134,6 +149,54 @@ impl ImportGraph {
     }
 }
 
+impl PartialEq for ImportGraph {
+    fn eq(&self, other: &ImportGraph) -> bool {
+        if self.modules.len() != other.modules.len() {
+            return false;
+        }
+
+        for module in self.modules.iter() {
+            if !other.modules.contains(module) {
+                return false;
+            }
+        }
+
+        true
+    }
+}
+
+#[derive(Debug)]
+pub struct ImportCycle {
+    pub modules: Vec<String>,
+}
+impl ImportCycle {
+    fn new() -> Self {
+        Self {
+            modules: Vec::new(),
+        }
+    }
+
+    fn add_module(&mut self, module: String) {
+        self.modules.push(module);
+    }
+}
+
+impl PartialEq for ImportCycle {
+    fn eq(&self, other: &ImportCycle) -> bool {
+        if self.modules.len() != other.modules.len() {
+            return false;
+        }
+
+        for cycle in &self.modules {
+            if !other.modules.contains(&cycle) {
+                return false;
+            }
+        }
+
+        true
+    }
+}
+
 /// Find all modules in a Python project
 ///
 /// Calls itself recursively on any submodules in the project.
@@ -142,18 +205,17 @@ impl ImportGraph {
 /// * `local_path` - Path to Python project
 /// * `prefix_for_strip` - project prefix to strip from fully qualified project path
 pub fn build_import_tree(local_path: &PathBuf, prefix_for_strip: &str) -> ImportGraph {
-    // let local_path_string = local_path.clone().to_str().unwrap().to_owned();
     let mut import_graph = ImportGraph::new();
 
     for dir_entry in fs::read_dir(local_path).unwrap() {
         let sub_path = dir_entry.unwrap().path();
 
-        if sub_path.is_dir() && crate::directory::path_is_not_hidden(&sub_path) {
+        if sub_path.is_dir() && directory::path_is_not_hidden(&sub_path) {
             // check if directory is a Python module
-            if crate::directory::init_file_exists(&sub_path) {
+            if directory::init_file_exists(&sub_path) {
                 import_graph.extend(build_import_tree(&sub_path, prefix_for_strip));
             }
-        } else if sub_path.is_file() && crate::directory::is_python_file(&sub_path) {
+        } else if sub_path.is_file() && directory::is_python_file(&sub_path) {
             let imports = find_imports_in_py(&sub_path);
 
             import_graph.add_module(
@@ -188,14 +250,86 @@ fn find_imports_in_py(file_path: &Path) -> Vec<String> {
     imports
 }
 
-pub fn print_import_cycles(import_cycles: Vec<Vec<String>>) {
+pub fn print_import_cycles(import_cycles: Vec<ImportCycle>) {
     if import_cycles.is_empty() {
         println!("\u{2705} No circular imports were found.")
     } else {
         println!("\u{274C} Circular imports were found: \n");
         for cycle in import_cycles {
-            let line = cycle.join(" -> ");
+            let line = cycle.modules.join(" -> ");
             println!("{line}");
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_find_imports_in_py() {
+        let file_path = PathBuf::from("test_files/package/module.py");
+        let imports = find_imports_in_py(&file_path);
+        assert_eq!(
+            imports,
+            vec![
+                "os",
+                "sys",
+                "numpy",
+                "pandas",
+                "matplotlib.pyplot",
+                "package.submodule.test1"
+            ]
+        );
+    }
+
+    #[test]
+    fn test_build_import_tree() {
+        let local_path = PathBuf::from("test_files");
+        let import_graph = build_import_tree(&local_path, "test_files");
+        let expected_import_graph = ImportGraph {
+            modules: vec![
+                PythonModule {
+                    self_id: 0,
+                    name: "package.module".to_owned(),
+                    imports: vec![
+                        "os".to_owned(),
+                        "sys".to_owned(),
+                        "numpy".to_owned(),
+                        "pandas".to_owned(),
+                        "matplotlib.pyplot".to_owned(),
+                    ],
+                },
+                PythonModule {
+                    self_id: 1,
+                    name: "package.submodule.test1".to_owned(),
+                    imports: vec!["os".to_owned(), "sys".to_owned()],
+                },
+                PythonModule {
+                    self_id: 2,
+                    name: "package.submodule.subsubmodule.test2".to_owned(),
+                    imports: vec!["os".to_owned(), "sys".to_owned()],
+                },
+            ],
+        };
+        assert_eq!(import_graph, expected_import_graph);
+    }
+
+    #[test]
+    fn test_find_circular_imports() {
+        let local_path = PathBuf::from("test_files");
+        let import_graph = build_import_tree(&local_path, "test_files");
+        let import_cycles = import_graph.find_circular_imports();
+        let test_cycle = ImportCycle {
+            modules: vec![
+                "package.module".to_owned(),
+                "package.submodule.test1".to_owned(),
+                "package.submodule.subsubmodule.test2".to_owned(),
+                "package.module".to_owned(),
+            ],
+        };
+        let expected_import_cycles = vec![test_cycle];
+
+        assert_eq!(import_cycles, expected_import_cycles);
     }
 }

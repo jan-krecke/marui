@@ -1,3 +1,7 @@
+/// Utility `struct` to represent an unordered pair
+///
+/// This struct is useful if the order of tuple elements does not matter for two  tuples
+/// to be considered equal.
 #[derive(Debug)]
 pub struct UnorderedPair<T>(pub T, pub T);
 

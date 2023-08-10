@@ -32,8 +32,9 @@ pub fn pyproject_exists(path: &Path) -> bool {
     for entry in fs::read_dir(path).unwrap() {
         let entry = entry.unwrap();
         let entry_path = entry.path();
+        let entry_path_filename = entry_path.file_name().unwrap().to_str().unwrap();
         if entry_path.is_file()
-            && entry_path.file_name().unwrap().to_str().unwrap() == "pyproject.toml"
+            && (entry_path_filename == "pyproject.toml" || entry_path_filename == "setup.py")
         {
             return true;
         }
